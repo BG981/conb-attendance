@@ -46,7 +46,7 @@
   .seg button[data-k="직출"][aria-pressed="true"]{--accent:var(--in);border-color:var(--in);box-shadow:0 0 0 3px rgba(47,109,181,.12);}
   .seg button[data-k="직퇴"][aria-pressed="true"]{--accent:var(--out);border-color:var(--out);box-shadow:0 0 0 3px rgba(168,85,42,.12);}
 
-  input[type=datetime-local],input[type=time],textarea,.search{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font-size:16px;font-family:inherit;color:var(--ink);background:#fff;outline:none;transition:.16s;}
+  input[type=datetime-local],input[type=time],input[type=text],textarea,.search{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font-size:16px;font-family:inherit;color:var(--ink);background:#fff;outline:none;transition:.16s;}
   input:focus,textarea:focus,.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(22,96,74,.10);}
   textarea{resize:none;min-height:78px;line-height:1.5;}
   .hint{font-size:12px;color:var(--ink-soft);margin:7px 2px 0;}
@@ -111,7 +111,7 @@
           <button type="button" data-k="외근" aria-pressed="false"><span class="em">🚗</span><span class="nm">외근</span><span class="sb">외부 업무</span></button>
           <button type="button" data-k="직퇴" aria-pressed="false"><span class="em">🌙</span><span class="nm">직퇴</span><span class="sb">직접 퇴근</span></button>
         </div>
-        <label class="lab">일시</label>
+        <label class="lab">미팅/작업 시작시각</label>
         <input type="datetime-local" id="when" />
       </div>
 
@@ -134,6 +134,8 @@
 
       <!-- 신규: 업무내용/예상복귀 -->
       <div id="newBottom">
+        <label class="lab">고객사 <span class="sub">(자유 입력)</span></label>
+        <input type="text" id="client" placeholder="예) KTC / 항공안전기술연구원" />
         <label class="lab">업무 내용</label>
         <textarea id="memo" placeholder="예) KTC 계약서 전달 / 국토부 미팅"></textarea>
         <div id="retBox">
@@ -278,12 +280,15 @@
   $("go").addEventListener("click", async function(){
     var names=[myName].concat(companions);
     var people=[{name:myName, userId:(profile&&profile.userId)||""}].concat(companions.map(function(n){return {name:n,userId:""};}));
-    var type, when, memo, ret, text;
+    var type, when, memo, ret, text, client="";
 
     if(mode==="신규"){
       when=$("when").value.replace("T"," "); memo=$("memo").value.trim();
       ret = picked==="직퇴" ? "-" : ($("ret").value||"-"); type=picked;
-      text="["+names.join(", ")+" · "+type+"]\n일시: "+when+"\n업무내용: "+memo+"\n예상 복귀시간: "+ret;
+      client=$("client").value.trim();
+      text="["+names.join(", ")+" · "+type+"]\n미팅/작업 시작시각: "+when
+         + (client? "\n고객사: "+client : "")
+         + "\n업무내용: "+memo+"\n예상 복귀시간: "+ret;
     } else {
       when=$("retWhen").value.replace("T"," "); memo=""; ret="-"; type="복귀완료";
       text="["+names.join(", ")+" · 복귀완료]\n복귀시각: "+when;
@@ -294,7 +299,7 @@
       await fetch(GAS_ENDPOINT, {
         method:"POST", mode:"no-cors",
         headers:{"Content-Type":"text/plain;charset=utf-8"},
-        body:JSON.stringify({ reporterName:myName, reporterUserId:(profile&&profile.userId)||"", type:type, when:when, memo:memo, ret:ret, people:people })
+        body:JSON.stringify({ reporterName:myName, reporterUserId:(profile&&profile.userId)||"", type:type, when:when, memo:memo, ret:ret, client:client, people:people })
       });
       if(["group","room","utou"].indexOf(ctxType)>=0){ await liff.sendMessages([{type:"text", text:text}]); }
       $("loading").classList.remove("on");
